@@ -48,6 +48,19 @@ The `@for` block replaces the `*ngFor` structural directive. It is designed to b
 </div>
 ```
 
+## Handling Empty Collections Gracefully
+### The @empty block is a new addition that allows developers to provide fallback content when a collection/list is empty to enhance the user experience.
+
+```html
+<section>
+   @for (user of userList; track user) {
+      <user-card [data]="user" />
+   } @empty {
+      <p>No item available</p>
+   }
+</section>
+```
+
 **New Way (Angular 19):**
 
 ```html

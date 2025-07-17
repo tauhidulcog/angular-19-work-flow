@@ -761,3 +761,140 @@ export class UserDetailsComponent {
 userId = signal(1);
 userResource = useUserData(this.userId);
 }
+
+
+
+The `@defer` block is a powerful new built-in primitive for **lazy-loading** components, directives, and pipes in your template. It's designed to improve application performance by delaying the loading of non-critical parts of your application until they are actually needed, reducing the initial bundle size and improving the initial load time.
+
+It's a more declarative and streamlined way to achieve lazy-loading compared to traditional router-based lazy-loading or dynamic imports.
+
+### The Core Concept of `@defer`
+
+The `@defer` block works by telling Angular to only download the code for the deferred content (e.g., a component) when a specific condition, known as a **trigger**, is met. This content is then rendered and hydrated, becoming a part of the application.
+
+### The Basic Structure
+
+The `@defer` block can contain three main parts:
+
+  * **`@placeholder` (Optional):** Content to be displayed while the deferred code is being loaded, *before* the trigger is met. This is useful for preventing layout shifts.
+  * **`@loading` (Optional):** Content to be displayed while the deferred code is *actually being downloaded*. This is great for showing a spinner or a loading message.
+  * **`@error` (Optional):** Content to be displayed if the lazy-loading fails.
+
+### `@defer` Triggers
+
+You can configure exactly when the deferred content should load by using a `trigger` on the `@defer` block. Here are the most common ones:
+
+  * **`on viewport`:** The content loads when it enters the user's viewport. This is one of the most common and useful triggers for content "below the fold."
+  * **`on idle`:** The content loads when the browser becomes idle (using the `requestIdleCallback` API). This is a great way to load non-critical content without blocking the main thread.
+  * **`on interaction`:** The content loads when the user interacts with a specific element within the placeholder. You can also specify a target element using a template reference variable, e.g., `on interaction(myButton)`.
+  * **`on hover`:** The content loads when the user hovers over the deferred block.
+  * **`on immediate`:** The content loads as soon as the browser can. This is an alternative to `on idle` that is more aggressive.
+  * **`on timer(...)`:** The content loads after a specified duration (e.g., `on timer(5s)`).
+  * **`when <expression>`:** The content loads when a boolean expression becomes `true`. This is useful for custom triggers.
+
+### Example: Lazy-Loading a Comment Section
+
+Let's imagine we have a news article page. The comments section is a good candidate for lazy-loading because it's not critical for the initial page load.
+
+#### Step 1: Create the Lazy-Loaded Component
+
+First, create a new standalone component for the comments. This component is just a regular component.
+
+```bash
+ng generate component comments --standalone
+```
+
+**`comments.component.ts`**
+
+```typescript
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-comments',
+  standalone: true,
+  template: `
+    <h3>Comments Section</h3>
+    <p>This component was lazy-loaded!</p>
+    <ul>
+      <li>This is the first comment.</li>
+      <li>Another insightful comment here.</li>
+      <li>One more comment for good measure.</li>
+    </ul>
+  `,
+})
+export class CommentsComponent {}
+```
+
+#### Step 2: Use `@defer` in the Parent Component
+
+Now, in your main article component, you'll use the `@defer` block to load the `CommentsComponent`.
+
+**`article.component.ts`**
+
+```typescript
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { CommentsComponent } from './comments.component';
+
+@Component({
+  selector: 'app-article',
+  standalone: true,
+  // Note: We do NOT import CommentsComponent in the imports array here,
+  // because it will be lazy-loaded by @defer.
+  template: `
+    <article>
+      <h1>Angular's New `@defer` Block</h1>
+      <p>This is the main article content. The comments section below will be lazy-loaded.</p>
+    </article>
+
+    <div class="comments-section-container">
+      @defer (on viewport) {
+        <app-comments />
+      } @placeholder {
+        <p>Comments section will load when you scroll down...</p>
+      } @loading {
+        <p>Loading comments...</p>
+      } @error {
+        <p>Failed to load comments. Please try again later.</p>
+      }
+    </div>
+  `,
+})
+export class ArticleComponent {}
+```
+
+### Breakdown of the Example
+
+  * **`@defer (on viewport)`:** This is the trigger. The content inside the `@defer` block will only be loaded when the user scrolls the "comments-section-container" div into view.
+  * **`<app-comments />`:** This is the component that will be lazy-loaded. Angular automatically handles the dynamic import behind the scenes.
+  * **`@placeholder`:** When the page first loads, the user sees "Comments section will load when you scroll down..." This ensures a seamless user experience and prevents layout shifts.
+  * **`@loading`:** After the user scrolls and the trigger fires, this content briefly appears while the browser downloads the `comments.component.ts` code.
+  * **`@error`:** If the download fails for any reason (e.g., network issue), this block will be displayed.
+
+### Other Useful Triggers
+
+Here's how you could use other triggers in the same scenario:
+
+**On Interaction:**
+
+```html
+@defer (on interaction) {
+  <app-comments />
+} @placeholder {
+  <p>Click here to load comments.</p>
+}
+```
+
+In this case, the comments would load only when the user clicks on the placeholder.
+
+**On Timer:**
+
+```html
+@defer (on timer(3s)) {
+  <app-comments />
+} @placeholder {
+  <p>Comments are loading in 3 seconds...</p>
+}
+```
+
+This would automatically start loading the comments after 3 seconds, regardless of user interaction.
